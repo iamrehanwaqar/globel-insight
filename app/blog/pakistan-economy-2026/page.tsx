@@ -1,3 +1,5 @@
+import Image from "next/image";
+
 export default function ArticlePage() {
   return (
     <main className="min-h-screen bg-[#0f172a] text-white px-6 py-16">
@@ -14,9 +16,11 @@ export default function ArticlePage() {
           Published on May 2026 • Global Insight
         </p>
 
-        <img
+        <Image
           src="https://images.unsplash.com/photo-1520607162513-77705c0f0d4a"
           alt="Economy"
+          width={1200}
+          height={675}
           className="w-full h-[450px] object-cover rounded-3xl mb-12"
         />
 

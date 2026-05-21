@@ -1,392 +1,99 @@
-
 import Link from "next/link";
+import { TrendingDashboard } from "@/components/analytics/trending-dashboard";
+import { ArticleCard } from "@/components/news/article-card";
+import { AdSlot } from "@/components/news/ad-slot";
+import { LocalPublishedArticles } from "@/components/news/local-published-articles";
+import { getArticles, getCategories } from "@/lib/news";
 
-export default function Home() {
+export default async function Home() {
+  const articles = await getArticles();
+  const featured = articles.find((article) => article.featured) ?? articles[0];
+  const latest = articles.filter((article) => article._id !== featured?._id).slice(0, 6);
+  const categories = getCategories(articles).slice(0, 6);
+
   return (
-    <main className="min-h-screen bg-[#0f172a] text-white overflow-hidden">
-
-      {/* NAVBAR */}
-      <nav className="border-b border-gray-800 bg-black/40 backdrop-blur-xl sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto flex justify-between items-center px-6 py-5">
-
-          <Link href="/" className="text-3xl font-bold tracking-wide hover:text-gray-300 transition">
-            Global Insight
-          </Link>
-
-          <ul className="hidden md:flex gap-8 text-gray-300 font-medium">
-
-            <li>
-              <Link href="/" className="hover:text-white transition">
-                Home
-              </Link>
-            </li>
-
-            <li>
-              <Link href="/blog" className="hover:text-white transition">
-                Blog
-              </Link>
-            </li>
-
-            <li>
-              <Link href="/about" className="hover:text-white transition">
-                About
-              </Link>
-            </li>
-
-            <li>
-              <Link href="/contact" className="hover:text-white transition">
-                Contact
-              </Link>
-            </li>
-
-            <li>
-              <Link href="/privacy-policy" className="hover:text-white transition">
-                Privacy
-              </Link>
-            </li>
-
-          </ul>
-        </div>
-      </nav>
-
-
-      {/* HERO SECTION */}
-      <section className="relative bg-gradient-to-b from-black to-[#111827] py-32 px-6 border-b border-gray-800">
-
-        <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_top,white,transparent_60%)]"></div>
-
-        <div className="relative max-w-6xl mx-auto text-center">
-
-          <span className="inline-block bg-red-600 px-4 py-2 rounded-full text-sm font-semibold mb-8 animate-pulse">
-            LIVE GLOBAL NEWS COVERAGE
-          </span>
-
-          <h1 className="text-6xl md:text-7xl font-black leading-tight mb-8 tracking-tight">
-            Breaking News &
-            <span className="block text-gray-300">
-              Global Current Affairs
-            </span>
-          </h1>
-
-          <p className="text-xl text-gray-400 max-w-3xl mx-auto mb-12 leading-9">
-            Global Insight delivers trusted reporting on politics,
-            artificial intelligence, world economy, technology,
-            international conflicts, and emerging global trends.
-          </p>
-
-          <div className="flex flex-col md:flex-row gap-5 justify-center items-center">
-
-            <Link
-              href="/blog"
-              className="bg-white text-black px-10 py-5 rounded-2xl font-bold text-lg hover:bg-gray-200 transition shadow-2xl"
-            >
-              Read Latest Articles
-            </Link>
-
-            <Link
-              href="/about"
-              className="border border-gray-700 px-10 py-5 rounded-2xl text-lg hover:bg-[#1e293b] transition"
-            >
-              Learn More
-            </Link>
-
+    <main className="overflow-hidden">
+      <section className="border-b border-white/10 bg-[radial-gradient(circle_at_20%_0%,rgba(16,185,129,0.22),transparent_28%),linear-gradient(135deg,#070a12,#111827_52%,#07111f)]">
+        <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:py-14">
+          <div className="mb-8 overflow-hidden rounded border border-red-400/20 bg-red-500/10 py-3">
+            <div className="ticker-track flex w-max gap-10 whitespace-nowrap text-sm font-bold uppercase tracking-[0.18em] text-red-100">
+              {["Breaking: AI governance summit opens", "Markets watch central bank signals", "Energy diplomacy reshapes trade routes", "Global sports calendar enters peak season"].concat(["Breaking: AI governance summit opens", "Markets watch central bank signals"]).map((item, index) => (
+                <span key={`${item}-${index}`}>{item}</span>
+              ))}
+            </div>
           </div>
-        </div>
-      </section>
 
-
-      {/* BREAKING NEWS BAR */}
-      <section className="max-w-7xl mx-auto px-6 py-16">
-
-        <div className="bg-red-600 rounded-3xl p-6 shadow-2xl border border-red-500">
-          <h2 className="text-2xl md:text-3xl font-bold leading-10">
-            🔴 Breaking: Global Leaders Discuss AI Regulations,
-            Cybersecurity Threats & Economic Stability During Emergency Summit
-          </h2>
-        </div>
-
-      </section>
-
-
-      {/* FEATURED STORIES */}
-      <section className="max-w-7xl mx-auto px-6 pb-24">
-
-        <div className="flex justify-between items-center mb-14">
-          <h2 className="text-5xl font-bold">
-            Featured Stories
-          </h2>
-
-          <Link href="/blog" className="text-gray-400 hover:text-white transition">
-            View All Articles →
-          </Link>
-        </div>
-
-
-        <div className="grid lg:grid-cols-3 gap-8">
-
-          {/* CARD 1 */}
-          <article className="bg-[#1e293b] rounded-3xl overflow-hidden border border-gray-800 hover:border-gray-600 transition duration-300 hover:-translate-y-1 shadow-xl">
-
-            <img
-              src="https://images.unsplash.com/photo-1520607162513-77705c0f0d4a"
-              alt="Economy"
-              className="h-60 w-full object-cover"
-            />
-
-            <div className="p-8">
-
-              <span className="text-blue-400 text-sm font-bold uppercase tracking-wider">
-                Economy
-              </span>
-
-              <h3 className="text-3xl font-bold mt-4 mb-5 leading-tight">
-                Pakistan Economic Reforms 2026
-              </h3>
-
-              <p className="text-gray-400 leading-8 mb-8">
-                New economic reforms aim to stabilize inflation,
-                attract foreign investment, and strengthen the
-                country's financial future.
+          <div className="grid gap-8 lg:grid-cols-[1.45fr_0.9fr] lg:items-end">
+            <div>
+              <p className="mb-5 text-sm font-black uppercase tracking-[0.34em] text-emerald-300">Premium Global Affairs</p>
+              <h1 className="max-w-5xl text-5xl font-black leading-[0.95] tracking-normal sm:text-7xl lg:text-8xl">
+                Signal-first journalism for a fast-moving world.
+              </h1>
+              <p className="mt-7 max-w-2xl text-lg leading-8 text-white/62">
+                Global Insight blends newsroom urgency with calm analysis across politics, AI, markets, diplomacy, and culture.
               </p>
+              <div className="mt-8 flex flex-wrap gap-3">
+                <Link href="/blog" className="rounded bg-white px-6 py-3 text-sm font-black uppercase tracking-[0.16em] text-black transition hover:bg-emerald-300">
+                  Read latest
+                </Link>
+                <Link href="/about" className="rounded border border-white/15 px-6 py-3 text-sm font-black uppercase tracking-[0.16em] text-white/80 transition hover:bg-white/10">
+                  Our newsroom
+                </Link>
+              </div>
+            </div>
 
-              <Link
-                href="/blog"
-                className="inline-block bg-white text-black px-6 py-3 rounded-xl font-semibold hover:bg-gray-200 transition"
-              >
-                Read Article
+            {featured && (
+              <Link href={`/blog/${featured.slug?.current}`} className="group rounded border border-white/10 bg-white/[0.06] p-5 backdrop-blur-xl transition hover:border-emerald-300/40">
+                <div className="text-xs font-bold uppercase tracking-[0.24em] text-emerald-300">Featured dispatch</div>
+                <h2 className="mt-5 text-3xl font-black leading-tight group-hover:text-emerald-100">{featured.title}</h2>
+                <p className="mt-4 text-sm leading-7 text-white/58">{featured.excerpt}</p>
+                <div className="mt-8 text-sm font-black uppercase tracking-[0.18em] text-white">Continue reading</div>
               </Link>
-
-            </div>
-          </article>
-
-
-          {/* CARD 2 */}
-          <article className="bg-[#1e293b] rounded-3xl overflow-hidden border border-gray-800 hover:border-gray-600 transition duration-300 hover:-translate-y-1 shadow-xl">
-
-            <img
-              src="https://images.unsplash.com/photo-1516321318423-f06f85e504b3"
-              alt="Artificial Intelligence"
-              className="h-60 w-full object-cover"
-            />
-
-            <div className="p-8">
-
-              <span className="text-purple-400 text-sm font-bold uppercase tracking-wider">
-                Artificial Intelligence
-              </span>
-
-              <h3 className="text-3xl font-bold mt-4 mb-5 leading-tight">
-                AI Revolution Around The World
-              </h3>
-
-              <p className="text-gray-400 leading-8 mb-8">
-                AI is transforming healthcare, education,
-                cybersecurity, and global industries faster
-                than ever before.
-              </p>
-
-              <Link
-                href="/blog"
-                className="inline-block bg-white text-black px-6 py-3 rounded-xl font-semibold hover:bg-gray-200 transition"
-              >
-                Read Article
-              </Link>
-
-            </div>
-          </article>
-
-
-          {/* CARD 3 */}
-          <article className="bg-[#1e293b] rounded-3xl overflow-hidden border border-gray-800 hover:border-gray-600 transition duration-300 hover:-translate-y-1 shadow-xl">
-
-            <img
-              src="https://images.unsplash.com/photo-1547347298-4074fc3086f0"
-              alt="Sports"
-              className="h-60 w-full object-cover"
-            />
-
-            <div className="p-8">
-
-              <span className="text-green-400 text-sm font-bold uppercase tracking-wider">
-                Sports
-              </span>
-
-              <h3 className="text-3xl font-bold mt-4 mb-5 leading-tight">
-                International Sports Headlines
-              </h3>
-
-              <p className="text-gray-400 leading-8 mb-8">
-                Football, cricket, Olympics, and global sports
-                tournaments continue dominating worldwide headlines.
-              </p>
-
-              <Link
-                href="/blog"
-                className="inline-block bg-white text-black px-6 py-3 rounded-xl font-semibold hover:bg-gray-200 transition"
-              >
-                Read Article
-              </Link>
-
-            </div>
-          </article>
-
-        </div>
-      </section>
-
-
-      {/* CATEGORIES */}
-      <section className="bg-[#111827] py-24 border-y border-gray-800">
-
-        <div className="max-w-7xl mx-auto px-6">
-
-          <h2 className="text-5xl font-bold text-center mb-16">
-            Explore Categories
-          </h2>
-
-          <div className="grid md:grid-cols-4 gap-8">
-
-            <div className="bg-[#1e293b] p-10 rounded-3xl border border-gray-700 text-center hover:border-gray-500 transition hover:-translate-y-1">
-              <h3 className="text-3xl font-bold mb-4">Politics</h3>
-              <p className="text-gray-400">Government, diplomacy, elections & policies</p>
-            </div>
-
-            <div className="bg-[#1e293b] p-10 rounded-3xl border border-gray-700 text-center hover:border-gray-500 transition hover:-translate-y-1">
-              <h3 className="text-3xl font-bold mb-4">Technology</h3>
-              <p className="text-gray-400">AI, innovation, startups & digital future</p>
-            </div>
-
-            <div className="bg-[#1e293b] p-10 rounded-3xl border border-gray-700 text-center hover:border-gray-500 transition hover:-translate-y-1">
-              <h3 className="text-3xl font-bold mb-4">Economy</h3>
-              <p className="text-gray-400">Finance, markets, trade & investments</p>
-            </div>
-
-            <div className="bg-[#1e293b] p-10 rounded-3xl border border-gray-700 text-center hover:border-gray-500 transition hover:-translate-y-1">
-              <h3 className="text-3xl font-bold mb-4">Sports</h3>
-              <p className="text-gray-400">International matches & tournaments</p>
-            </div>
-
+            )}
           </div>
         </div>
       </section>
 
-
-      {/* NEWSLETTER */}
-      <section className="bg-black py-24 px-6 border-b border-gray-800">
-
-        <div className="max-w-4xl mx-auto text-center">
-
-          <h2 className="text-5xl font-bold mb-8 leading-tight">
-            Subscribe For Daily Updates
-          </h2>
-
-          <p className="text-gray-400 text-xl leading-9 mb-12">
-            Receive breaking news, global analysis,
-            AI developments, and major current affairs
-            directly in your inbox.
-          </p>
-
-          <div className="flex flex-col md:flex-row gap-5 justify-center">
-
-            <input
-              type="email"
-              placeholder="Enter your email"
-              className="bg-[#1e293b] border border-gray-700 rounded-2xl px-6 py-5 w-full md:w-[450px] outline-none focus:border-gray-500"
-            />
-
-            <button className="bg-white text-black px-10 py-5 rounded-2xl font-bold hover:bg-gray-200 transition">
-              Subscribe
-            </button>
-
+      <section className="mx-auto grid max-w-7xl gap-8 px-4 py-12 sm:px-6 lg:grid-cols-[1fr_320px]">
+        <div>
+          <LocalPublishedArticles />
+          <div className="mb-6 flex items-end justify-between gap-4">
+            <div>
+              <p className="text-sm font-bold uppercase tracking-[0.25em] text-white/40">Trending now</p>
+              <h2 className="mt-2 text-3xl font-black">Editor’s Briefing</h2>
+            </div>
+            <Link href="/blog" className="text-sm font-bold text-emerald-300 hover:text-white">View all</Link>
+          </div>
+          <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+            {latest.map((article) => (
+              <ArticleCard key={article._id} article={article} />
+            ))}
           </div>
         </div>
-      </section>
-
-
-      {/* FOOTER */}
-      <footer className="border-t border-gray-800">
-
-        <div className="max-w-7xl mx-auto px-6 py-16 grid md:grid-cols-3 gap-14">
-
-          <div>
-            <h3 className="text-3xl font-bold mb-6">
-              Global Insight
-            </h3>
-
-            <p className="text-gray-400 leading-9 text-lg">
-              Trusted journalism and global reporting on politics,
-              artificial intelligence, economy, world conflicts,
-              technology, and international developments.
-            </p>
-          </div>
-
-
-          <div>
-            <h4 className="text-2xl font-bold mb-6">
-              Quick Links
-            </h4>
-
-            <ul className="space-y-4 text-gray-400 text-lg">
-
-              <li>
-                <Link href="/" className="hover:text-white transition">
-                  Home
+        <aside className="space-y-5">
+          <AdSlot />
+          <TrendingDashboard articles={articles} />
+          <div className="rounded border border-white/10 bg-white/[0.045] p-5">
+            <h3 className="text-sm font-black uppercase tracking-[0.22em] text-white/45">Categories</h3>
+            <div className="mt-4 grid gap-3">
+              {categories.map((category) => (
+                <Link key={category} href={`/blog?category=${encodeURIComponent(category)}`} className="flex items-center justify-between rounded border border-white/10 px-4 py-3 text-sm font-bold text-white/75 hover:border-emerald-300/40 hover:text-white">
+                  {category}
+                  <span>→</span>
                 </Link>
-              </li>
-
-              <li>
-                <Link href="/blog" className="hover:text-white transition">
-                  Blog
-                </Link>
-              </li>
-
-              <li>
-                <Link href="/about" className="hover:text-white transition">
-                  About
-                </Link>
-              </li>
-
-              <li>
-                <Link href="/contact" className="hover:text-white transition">
-                  Contact
-                </Link>
-              </li>
-
-              <li>
-                <Link href="/privacy-policy" className="hover:text-white transition">
-                  Privacy Policy
-                </Link>
-              </li>
-
-            </ul>
-          </div>
-
-
-          <div>
-            <h4 className="text-2xl font-bold mb-6">
-              Follow Us
-            </h4>
-
-            <p className="text-gray-400 text-lg leading-9 mb-8">
-              Stay connected for the latest global headlines,
-              technology trends, AI developments, and current affairs.
-            </p>
-
-            <div className="flex gap-4">
-              <div className="w-12 h-12 rounded-full bg-[#1e293b]"></div>
-              <div className="w-12 h-12 rounded-full bg-[#1e293b]"></div>
-              <div className="w-12 h-12 rounded-full bg-[#1e293b]"></div>
+              ))}
             </div>
           </div>
-
-        </div>
-
-
-        <div className="border-t border-gray-800 py-8 text-center text-gray-500 text-lg">
-          © 2026 Global Insight. All rights reserved.
-        </div>
-
-      </footer>
-
+          <div className="rounded border border-emerald-300/20 bg-emerald-300/10 p-5">
+            <h3 className="text-2xl font-black">Daily Intelligence</h3>
+            <p className="mt-3 text-sm leading-6 text-white/58">A concise morning brief on power, money, technology, and global risk.</p>
+            <form className="mt-5 grid gap-3">
+              <input type="email" placeholder="Email address" className="rounded border border-white/10 bg-black/30 px-4 py-3 text-sm outline-none focus:border-emerald-300" />
+              <button className="rounded bg-white px-4 py-3 text-sm font-black uppercase tracking-[0.16em] text-black hover:bg-emerald-300">Subscribe</button>
+            </form>
+          </div>
+        </aside>
+      </section>
     </main>
   );
 }

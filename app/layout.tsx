@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { SiteHeader } from "@/components/layout/site-header";
 import { CookieConsent } from "@/components/ui/cookie-consent";
@@ -57,6 +58,7 @@ export default function RootLayout({
           <SiteFooter />
           <CookieConsent />
         </AuthProvider>
+        <Analytics />
       </body>
     </html>
   );

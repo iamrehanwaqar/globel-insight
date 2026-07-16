@@ -24,17 +24,12 @@ export type SourceFeed = {
 };
 
 export const NEWS_FEEDS: SourceFeed[] = [
+  // ── World News ──
   {
     name: "BBC News",
     url: "https://feeds.bbci.co.uk/news/world/rss.xml",
     domain: "bbc.co.uk",
     category: "World",
-  },
-  {
-    name: "BBC News Technology",
-    url: "https://feeds.bbci.co.uk/news/technology/rss.xml",
-    domain: "bbc.co.uk",
-    category: "Technology",
   },
   {
     name: "The Guardian World",
@@ -54,11 +49,12 @@ export const NEWS_FEEDS: SourceFeed[] = [
     domain: "npr.org",
     category: "World",
   },
+  // ── Technology & AI ──
   {
-    name: "Reuters Business",
-    url: "https://www.reutersagency.com/feed/?best-topics=business-finance&post_type=best",
-    domain: "reuters.com",
-    category: "Business",
+    name: "BBC News Technology",
+    url: "https://feeds.bbci.co.uk/news/technology/rss.xml",
+    domain: "bbc.co.uk",
+    category: "Technology",
   },
   {
     name: "The Guardian Technology",
@@ -66,11 +62,51 @@ export const NEWS_FEEDS: SourceFeed[] = [
     domain: "theguardian.com",
     category: "Technology",
   },
+  // ── Business ──
   {
     name: "BBC News Business",
     url: "https://feeds.bbci.co.uk/news/business/rss.xml",
     domain: "bbc.co.uk",
     category: "Business",
+  },
+  {
+    name: "Reuters Business",
+    url: "https://www.reutersagency.com/feed/?best-topics=business-finance&post_type=best",
+    domain: "reuters.com",
+    category: "Business",
+  },
+  // ── Science & Environment ──
+  {
+    name: "BBC News Science",
+    url: "https://feeds.bbci.co.uk/news/science_and_environment/rss.xml",
+    domain: "bbc.co.uk",
+    category: "Science",
+  },
+  // ── Entertainment ──
+  {
+    name: "BBC News Entertainment",
+    url: "https://feeds.bbci.co.uk/news/entertainment_and_arts/rss.xml",
+    domain: "bbc.co.uk",
+    category: "Entertainment",
+  },
+  {
+    name: "The Guardian Culture",
+    url: "https://www.theguardian.com/music/rss",
+    domain: "theguardian.com",
+    category: "Culture",
+  },
+  // ── Sports ──
+  {
+    name: "BBC Sport",
+    url: "https://feeds.bbci.co.uk/sport/rss.xml",
+    domain: "bbc.co.uk",
+    category: "Sports",
+  },
+  {
+    name: "ESPN",
+    url: "https://www.espn.com/espn/rss/news",
+    domain: "espn.com",
+    category: "Sports",
   },
 ];
 
@@ -360,6 +396,78 @@ function extractTags(title: string, description: string): string[] {
       "profit",
       "quarterly",
       "shareholder",
+    ],
+    Science: [
+      "scientists",
+      "research",
+      "discovery",
+      "study",
+      "experiment",
+      "journal",
+      "breakthrough",
+    ],
+    Movies: [
+      "movie",
+      "film",
+      "cinema",
+      "trailer",
+      "box office",
+      "director",
+      "screenplay",
+      "franchise",
+      "sequel",
+    ],
+    TV: [
+      "series",
+      "season",
+      "streaming",
+      "netflix",
+      "hulu",
+      "disney+",
+      "episode",
+      "showrunner",
+    ],
+    Anime: [
+      "anime",
+      "manga",
+      "studio ghibli",
+      "crunchyroll",
+      "otaku",
+    ],
+    Music: [
+      "album",
+      "single",
+      "concert",
+      "tour",
+      "artist",
+      "billboard",
+      "spotify",
+      "grammy",
+    ],
+    Sports: [
+      "football",
+      "soccer",
+      "basketball",
+      "cricket",
+      "tennis",
+      "f1",
+      "formula 1",
+      "olympics",
+      "world cup",
+      "championship",
+      "premier league",
+      "nfl",
+      "nba",
+      "mlb",
+      "transfer",
+    ],
+    Culture: [
+      "trend",
+      "viral",
+      "meme",
+      "internet",
+      "social",
+      "digital culture",
     ],
   };
 

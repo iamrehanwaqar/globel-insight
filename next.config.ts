@@ -17,6 +17,8 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "dims.apnews.com" },
       { protocol: "https", hostname: "storage.googleapis.com" },
       { protocol: "https", hostname: "img.youtube.com" },
+      { protocol: "https", hostname: "a.espncdn.com" },
+      { protocol: "https", hostname: "www.espn.com" },
     ],
   },
 };

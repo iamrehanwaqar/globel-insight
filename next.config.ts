@@ -9,6 +9,14 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       { protocol: "https", hostname: "cdn.sanity.io" },
       { protocol: "https", hostname: "images.unsplash.com" },
+      { protocol: "https", hostname: "ichef.bbci.co.uk" },
+      { protocol: "https", hostname: "i.guim.co.uk" },
+      { protocol: "https", hostname: "www.aljazeera.com" },
+      { protocol: "https", hostname: "cloudfront-us-east-1.images.arcpublishing.com" },
+      { protocol: "https", hostname: "media.reuters.com" },
+      { protocol: "https", hostname: "dims.apnews.com" },
+      { protocol: "https", hostname: "storage.googleapis.com" },
+      { protocol: "https", hostname: "img.youtube.com" },
     ],
   },
 };

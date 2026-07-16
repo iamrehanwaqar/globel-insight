@@ -7,6 +7,16 @@ export type StoryTimelineEvent = {
   headline: string;
   sourceName: string;
   sourceUrl: string;
+  imageUrl?: string;
+};
+
+export type StoryMedia = {
+  type: "image" | "video";
+  url: string;
+  sourceName: string;
+  sourceUrl: string;
+  alt: string;
+  caption?: string;
 };
 
 export type Story = {
@@ -32,6 +42,11 @@ export type Story = {
   sources: SourceArticle[];
   sourceCount: number;
   sourceNames: string[];
+
+  heroImage?: string;
+  heroImageSource?: string;
+  heroImageCaption?: string;
+  media: StoryMedia[];
 };
 
 const STOP_WORDS = new Set([
@@ -165,6 +180,8 @@ function synthesizeStory(cluster: SourceArticle[]): Story {
   const whatChanged = generateWhatChanged(cluster);
   const timeline = generateTimeline(sorted);
 
+  const { heroImage, heroImageSource, heroImageCaption, media } = aggregateMedia(sorted);
+
   return {
     id: slug,
     slug,
@@ -184,6 +201,10 @@ function synthesizeStory(cluster: SourceArticle[]): Story {
     sources: sorted,
     sourceCount: sorted.length,
     sourceNames,
+    heroImage,
+    heroImageSource,
+    heroImageCaption,
+    media,
   };
 }
 
@@ -410,12 +431,59 @@ function generateWhatChanged(cluster: SourceArticle[]): string | undefined {
   return `Latest update from ${latest.sourceName} (${hoursDiff < 1 ? "recently" : `${Math.round(hoursDiff)}h ago`}): "${latest.description.slice(0, 150)}..."`;
 }
 
+function aggregateMedia(sources: SourceArticle[]): {
+  heroImage?: string;
+  heroImageSource?: string;
+  heroImageCaption?: string;
+  media: StoryMedia[];
+} {
+  const media: StoryMedia[] = [];
+  const seenImages = new Set<string>();
+  const seenVideos = new Set<string>();
+
+  for (const source of sources) {
+    if (source.imageUrl && !seenImages.has(source.imageUrl)) {
+      seenImages.add(source.imageUrl);
+      media.push({
+        type: "image",
+        url: source.imageUrl,
+        sourceName: source.sourceName,
+        sourceUrl: source.sourceUrl,
+        alt: source.title,
+        caption: `${source.title} — ${source.sourceName}`,
+      });
+    }
+
+    if (source.videoUrl && !seenVideos.has(source.videoUrl)) {
+      seenVideos.add(source.videoUrl);
+      media.push({
+        type: "video",
+        url: source.videoUrl,
+        sourceName: source.sourceName,
+        sourceUrl: source.sourceUrl,
+        alt: source.title,
+        caption: `${source.title} — ${source.sourceName}`,
+      });
+    }
+  }
+
+  const heroMedia = media.find((m) => m.type === "image");
+
+  return {
+    heroImage: heroMedia?.url,
+    heroImageSource: heroMedia?.sourceName,
+    heroImageCaption: heroMedia?.caption,
+    media,
+  };
+}
+
 function generateTimeline(sorted: SourceArticle[]): StoryTimelineEvent[] {
   return sorted.map((a) => ({
     date: a.publishedAt,
     headline: a.title,
     sourceName: a.sourceName,
     sourceUrl: a.sourceUrl,
+    imageUrl: a.imageUrl,
   }));
 }
 

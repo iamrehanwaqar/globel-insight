@@ -326,7 +326,7 @@ function synthesizeStory(cluster: SourceArticle[]): Story {
   const whatChanged = generateWhatChanged(cluster);
   const timeline = generateTimeline(sorted);
 
-  const { heroImage, heroImageSource, heroImageCaption, media } = aggregateMedia(sorted);
+  const { heroImage, heroImageSource, heroImageCaption, media } = aggregateMedia(sorted, headline);
 
   return {
     id: slug,
@@ -559,7 +559,7 @@ function generateWhatChanged(cluster: SourceArticle[]): string | undefined {
   return `Latest update from ${latest.sourceName} (${hoursDiff < 1 ? "recently" : `${Math.round(hoursDiff)}h ago`}): "${latest.description.slice(0, 150)}..."`;
 }
 
-function aggregateMedia(sources: SourceArticle[]): {
+function aggregateMedia(sources: SourceArticle[], storyHeadline: string): {
   heroImage?: string;
   heroImageSource?: string;
   heroImageCaption?: string;
@@ -569,9 +569,30 @@ function aggregateMedia(sources: SourceArticle[]): {
   const seenImages = new Set<string>();
   const seenVideos = new Set<string>();
 
+  const scoredImages: { url: string; score: number; source: SourceArticle }[] = [];
+  const headlineKeywords = extractTitleKeywords(storyHeadline);
+
   for (const source of sources) {
     if (source.imageUrl && !seenImages.has(source.imageUrl)) {
       seenImages.add(source.imageUrl);
+
+      let score = 0;
+      const sourceKeywords = extractTitleKeywords(source.title);
+      const sharedKws = sourceKeywords.filter((kw) => headlineKeywords.includes(kw));
+      score += sharedKws.length * 3;
+
+      const sourceDescKws = extractKeywords(source.description).slice(0, 10);
+      const sharedDescKws = sourceDescKws.filter((kw) => headlineKeywords.includes(kw));
+      score += sharedDescKws.length * 1.5;
+
+      const url = source.imageUrl.toLowerCase();
+      if (url.includes("1280") || url.includes("1920") || url.includes("1080") || url.includes("hd") || url.includes("large") || url.includes("full")) score += 3;
+      if (url.includes("thumb") || url.includes("small") || url.includes("icon") || url.includes("avatar") || url.includes("logo") || url.includes("48") || url.includes("72")) score -= 5;
+
+      if (url.endsWith(".jpg") || url.endsWith(".jpeg") || url.endsWith(".png") || url.endsWith(".webp")) score += 1;
+
+      scoredImages.push({ url: source.imageUrl, score, source });
+
       media.push({
         type: "image",
         url: source.imageUrl,
@@ -595,12 +616,13 @@ function aggregateMedia(sources: SourceArticle[]): {
     }
   }
 
-  const heroMedia = media.find((m) => m.type === "image");
+  scoredImages.sort((a, b) => b.score - a.score);
+  const bestImage = scoredImages[0];
 
   return {
-    heroImage: heroMedia?.url,
-    heroImageSource: heroMedia?.sourceName,
-    heroImageCaption: heroMedia?.caption,
+    heroImage: bestImage?.url,
+    heroImageSource: bestImage?.source.sourceName,
+    heroImageCaption: bestImage ? `${bestImage.source.title} — ${bestImage.source.sourceName}` : undefined,
     media,
   };
 }

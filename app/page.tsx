@@ -1,6 +1,6 @@
 import Link from "next/link";
-import Image from "next/image";
 import { StoryCard } from "@/components/story/story-card";
+import { HeroImage } from "@/components/story/hero-image";
 import { getArticles } from "@/lib/news";
 import { getStories } from "@/lib/stories";
 import { BreakingNewsTicker } from "@/components/story/breaking-news-ticker";
@@ -14,6 +14,17 @@ const CATEGORY_SECTIONS = [
   { slug: "Science",       label: "Science",          gradient: "from-cyan-500/20 to-blue-500/20" },
   { slug: "Business",      label: "Business",         gradient: "from-emerald-500/20 to-teal-500/20" },
 ];
+
+function timeAgo(dateStr: string): string {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const minutes = Math.floor(diff / 60000);
+  if (minutes < 1) return "just now";
+  if (minutes < 60) return `${minutes} min ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  return `${days}d ago`;
+}
 
 export default async function Home() {
   const articles = await getArticles();
@@ -30,108 +41,116 @@ export default async function Home() {
       {/* ── Breaking Ticker ── */}
       <BreakingNewsTicker stories={stories} />
 
-      {/* ── Hero Section ── */}
+      {/* ── Hero Section: ONE STORY. EVERY PERSPECTIVE. ── */}
       <section className="relative border-b border-white/10">
-        {featuredStory && featuredStory.heroImage ? (
-          <div className="relative min-h-[520px] lg:min-h-[600px]">
-            <Image
+        {featuredStory ? (
+          <div className="relative min-h-[600px] lg:min-h-[700px]">
+            <HeroImage
               src={featuredStory.heroImage}
               alt={featuredStory.headline}
-              fill
-              priority
-              sizes="100vw"
-              className="object-cover"
+              category={featuredStory.category}
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-[#070a12] via-[#070a12]/70 to-[#070a12]/30" />
-            <div className="absolute inset-0 bg-gradient-to-r from-[#070a12]/60 to-transparent" />
 
-            <div className="relative mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:py-20">
-              <div className="grid gap-8 lg:grid-cols-[1.2fr_1fr] lg:items-end">
-                <div>
-                  <p className="mb-5 text-sm font-black uppercase tracking-[0.34em] text-emerald-300">
-                    Global Insight Intelligence
-                  </p>
-                  <h1 className="max-w-5xl text-4xl font-black leading-[0.92] tracking-tight sm:text-6xl lg:text-7xl xl:text-8xl">
-                    One story. Every perspective. Clear understanding.
-                  </h1>
-                  <p className="mt-7 max-w-2xl text-lg leading-8 text-white/62">
-                    We aggregate multiple sources to deliver unified intelligence briefings across world affairs, technology, sports, entertainment, science, and business.
-                  </p>
-                  <div className="mt-8 flex flex-wrap gap-3">
-                    <Link href="/search" className="rounded bg-emerald-500 px-6 py-3 text-sm font-black uppercase tracking-[0.16em] text-white transition hover:bg-emerald-400">
-                      Search Stories
-                    </Link>
-                    <Link href="/following" className="flex items-center gap-2 rounded border border-white/15 px-6 py-3 text-sm font-black uppercase tracking-[0.16em] text-white/80 transition hover:bg-white/10">
-                      <svg className="h-4 w-4 text-emerald-400" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M5 4a2 2 0 012-2h6a2 2 0 012 2v14l-5-2.5L5 18V4z" />
-                      </svg>
-                      Your Interests
-                    </Link>
-                  </div>
+            {/* Gradient overlays for readability */}
+            <div className="absolute inset-0 bg-gradient-to-t from-[#070a12] via-[#070a12]/60 to-[#070a12]/20" />
+            <div className="absolute inset-0 bg-gradient-to-r from-[#070a12]/80 via-[#070a12]/40 to-transparent" />
+            <div className="absolute inset-0 bg-[#070a12]/10" />
+
+            <div className="relative mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:py-24">
+              <div className="max-w-3xl">
+                {/* Tagline */}
+                <div className="mb-6 flex items-center gap-3">
+                  <span className="h-px w-8 bg-emerald-400" />
+                  <span className="text-sm font-black uppercase tracking-[0.34em] text-emerald-300">
+                    One Story. Every Perspective.
+                  </span>
                 </div>
 
-                <Link href={`/story/${featuredStory.slug}`} className="group rounded-xl border border-emerald-500/30 bg-black/40 backdrop-blur-xl p-6 shadow-2xl transition hover:border-emerald-400/60">
-                  <div className="flex items-center gap-3 mb-4">
-                    <span className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.24em] text-emerald-400">
-                      <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-400" />
-                      Top Story
-                    </span>
-                    <span className="text-xs text-white/40">{featuredStory.sourceCount} sources</span>
-                  </div>
-                  <div className="mb-3 text-[11px] font-black uppercase tracking-[0.2em] text-emerald-400/70">
-                    {featuredStory.category}
-                  </div>
-                  <h2 className="text-2xl sm:text-3xl font-black leading-tight group-hover:text-emerald-300 transition-colors">
-                    {featuredStory.headline}
-                  </h2>
-                  <p className="mt-4 text-sm leading-6 text-white/65 line-clamp-3">
-                    {featuredStory.whatHappened}
-                  </p>
-                  <div className="mt-6 text-sm font-black uppercase tracking-[0.18em] text-emerald-400 group-hover:text-emerald-300">
-                    Read Intelligence Briefing →
-                  </div>
-                </Link>
+                {/* Headline */}
+                <h1 className="text-4xl font-black leading-[1.05] tracking-tight sm:text-5xl lg:text-6xl xl:text-7xl drop-shadow-lg">
+                  {featuredStory.headline}
+                </h1>
+
+                {/* Briefing */}
+                <p className="mt-6 max-w-2xl text-lg leading-8 text-white/75 drop-shadow">
+                  {featuredStory.whatHappened.length > 280
+                    ? `${featuredStory.whatHappened.slice(0, 280)}...`
+                    : featuredStory.whatHappened}
+                </p>
+
+                {/* Metadata */}
+                <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-3 text-sm text-white/55">
+                  <span className="flex items-center gap-2">
+                    <svg className="h-4 w-4 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
+                    </svg>
+                    <span className="font-bold text-white/80">{featuredStory.sourceCount}</span> source{featuredStory.sourceCount !== 1 ? "s" : ""}
+                  </span>
+                  <span className="h-1 w-1 rounded-full bg-white/25" />
+                  <span>Updated {timeAgo(featuredStory.lastUpdated)}</span>
+                  <span className="h-1 w-1 rounded-full bg-white/25" />
+                  <span className="rounded bg-white/10 px-2.5 py-1 text-xs font-bold uppercase tracking-wider text-white/70">{featuredStory.category}</span>
+                </div>
+
+                {/* Source names */}
+                <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-white/40">
+                  {featuredStory.sourceNames.slice(0, 4).map((name) => (
+                    <span key={name} className="rounded-full border border-white/10 bg-white/[0.06] px-3 py-1">{name}</span>
+                  ))}
+                  {featuredStory.sourceNames.length > 4 && (
+                    <span className="text-white/30">+{featuredStory.sourceNames.length - 4} more</span>
+                  )}
+                </div>
+
+                {/* CTA */}
+                <div className="mt-10 flex flex-wrap gap-4">
+                  <Link
+                    href={`/story/${featuredStory.slug}`}
+                    className="group inline-flex items-center gap-3 rounded bg-emerald-500 px-8 py-4 text-sm font-black uppercase tracking-[0.16em] text-white transition hover:bg-emerald-400 hover:shadow-[0_0_30px_rgba(16,185,129,0.3)]"
+                  >
+                    Read Full Intelligence
+                    <svg className="h-4 w-4 transition group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                    </svg>
+                  </Link>
+                  <Link
+                    href="/search"
+                    className="inline-flex items-center gap-2 rounded border border-white/15 px-8 py-4 text-sm font-black uppercase tracking-[0.16em] text-white/80 transition hover:bg-white/10"
+                  >
+                    Search All Stories
+                  </Link>
+                </div>
               </div>
             </div>
           </div>
         ) : (
-          <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:py-14">
-            <div className="grid gap-8 lg:grid-cols-[1.45fr_0.9fr] lg:items-end">
-              <div>
-                <p className="mb-5 text-sm font-black uppercase tracking-[0.34em] text-emerald-300">Global Insight Intelligence</p>
-                <h1 className="max-w-5xl text-5xl font-black leading-[0.95] tracking-normal sm:text-7xl lg:text-8xl">
-                  One story. Every perspective. Clear understanding.
+          <div className="relative min-h-[500px] lg:min-h-[600px]">
+            <div className="absolute inset-0 bg-gradient-to-br from-emerald-600 via-teal-700 to-slate-900" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#070a12] via-[#070a12]/50 to-transparent" />
+
+            <div className="relative mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:py-24">
+              <div className="max-w-3xl">
+                <div className="mb-6 flex items-center gap-3">
+                  <span className="h-px w-8 bg-emerald-400" />
+                  <span className="text-sm font-black uppercase tracking-[0.34em] text-emerald-300">
+                    One Story. Every Perspective.
+                  </span>
+                </div>
+                <h1 className="text-4xl font-black leading-[1.05] tracking-tight sm:text-5xl lg:text-6xl xl:text-7xl">
+                  Global intelligence. Multiple sources. Clear understanding.
                 </h1>
-                <p className="mt-7 max-w-2xl text-lg leading-8 text-white/62">
+                <p className="mt-6 max-w-2xl text-lg leading-8 text-white/75">
                   We aggregate multiple sources to deliver unified intelligence briefings across world affairs, technology, sports, entertainment, science, and business.
                 </p>
-                <div className="mt-8 flex flex-wrap gap-3">
-                  <Link href="/search" className="rounded bg-emerald-500 px-6 py-3 text-sm font-black uppercase tracking-[0.16em] text-white transition hover:bg-emerald-400">
+                <div className="mt-10 flex flex-wrap gap-4">
+                  <Link href="/search" className="rounded bg-emerald-500 px-8 py-4 text-sm font-black uppercase tracking-[0.16em] text-white transition hover:bg-emerald-400">
                     Search Stories
                   </Link>
-                  <Link href="/following" className="flex items-center gap-2 rounded border border-white/15 px-6 py-3 text-sm font-black uppercase tracking-[0.16em] text-white/80 transition hover:bg-white/10">
-                    <svg className="h-4 w-4 text-emerald-400" fill="currentColor" viewBox="0 0 20 20">
-                      <path d="M5 4a2 2 0 012-2h6a2 2 0 012 2v14l-5-2.5L5 18V4z" />
-                    </svg>
-                    Your Interests
+                  <Link href="/daily" className="rounded border border-white/15 px-8 py-4 text-sm font-black uppercase tracking-[0.16em] text-white/80 transition hover:bg-white/10">
+                    Daily Briefing
                   </Link>
                 </div>
               </div>
-
-              {featuredStory && (
-                <Link href={`/story/${featuredStory.slug}`} className="group rounded border border-emerald-500/30 bg-emerald-950/40 p-6 backdrop-blur-xl transition hover:border-emerald-400/60 shadow-2xl">
-                  <div className="flex items-center gap-3">
-                    <span className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.24em] text-emerald-400">
-                      <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-400" />
-                      Top Story
-                    </span>
-                    <span className="text-xs text-white/40">{featuredStory.sourceCount} sources</span>
-                  </div>
-                  <h2 className="mt-5 text-4xl font-black leading-tight group-hover:text-emerald-300 transition-colors">{featuredStory.headline}</h2>
-                  <p className="mt-4 text-sm leading-7 text-white/70 line-clamp-3">{featuredStory.whatHappened}</p>
-                  <div className="mt-8 text-sm font-black uppercase tracking-[0.18em] text-emerald-400 group-hover:text-emerald-300">Read Intelligence Briefing →</div>
-                </Link>
-              )}
             </div>
           </div>
         )}

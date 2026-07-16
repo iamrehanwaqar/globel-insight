@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 import { getStories } from "@/lib/stories";
 import { StoryCard } from "@/components/story/story-card";
 
+export const dynamic = "force-dynamic";
+
 const ALL_CATEGORIES = [
   "World", "Technology", "AI", "Business", "Politics", "Science",
   "Health", "Climate", "Sports", "Entertainment", "Movies", "TV",
@@ -48,10 +50,6 @@ const CATEGORY_COLORS: Record<string, string> = {
   Space:         "from-slate-400 to-blue-500",
   Conflict:      "from-red-600 to-red-400",
 };
-
-export function generateStaticParams() {
-  return ALL_CATEGORIES.map((slug) => ({ slug }));
-}
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;

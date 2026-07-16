@@ -17,6 +17,21 @@ type PortableBlockProps = {
   value?: { _key?: string };
 };
 
+const CATEGORY_GRADIENTS: Record<string, string> = {
+  World:         "from-blue-600 via-cyan-700 to-slate-900",
+  Technology:    "from-violet-600 via-indigo-700 to-slate-900",
+  AI:            "from-purple-600 via-fuchsia-700 to-slate-900",
+  Business:      "from-emerald-600 via-teal-700 to-slate-900",
+  Politics:      "from-red-600 via-orange-700 to-slate-900",
+  Science:       "from-cyan-600 via-blue-700 to-slate-900",
+  Health:        "from-pink-600 via-rose-700 to-slate-900",
+  Climate:       "from-green-600 via-emerald-700 to-slate-900",
+  Sports:        "from-orange-600 via-amber-700 to-slate-900",
+  Entertainment: "from-fuchsia-600 via-purple-700 to-slate-900",
+  Economy:       "from-emerald-600 via-green-700 to-slate-900",
+  Global:        "from-emerald-600 via-teal-700 to-slate-900",
+};
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const post = await getArticle(slug);
@@ -37,6 +52,17 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
+function resolveDetailImage(post: { imageUrl?: string | null; mainImage?: unknown; category?: string }) {
+  if (post.imageUrl && post.imageUrl.startsWith("http")) return post.imageUrl;
+  if (post.mainImage) {
+    try {
+      const url = urlFor(post.mainImage).width(1400).height(780).url();
+      if (url && url.startsWith("http")) return url;
+    } catch {}
+  }
+  return null;
+}
+
 export default async function PostPage({ params }: Props) {
   const { slug } = await params;
   const post = await getArticle(slug);
@@ -45,11 +71,16 @@ export default async function PostPage({ params }: Props) {
   const allArticles = await getArticles();
   const related = allArticles.filter((article) => article._id !== post._id && article.category === post.category).slice(0, 3);
   const title = post.title || "Global Insight article";
-  const image = post.imageUrl ?? (post.mainImage ? urlFor(post.mainImage).width(1400).height(780).url() : null);
-  const headings = post.body?.filter((block) => block._type === "block" && ["h2", "h3"].includes(block.style ?? "")).map((block) => ({
-    id: block._key,
-    text: block.children?.map((child: { text?: string }) => child.text).join("") ?? "",
-  })) ?? [];
+  const category = post.category || "Global";
+  const image = resolveDetailImage(post);
+  const hasBody = Array.isArray(post.body) && post.body.length > 0;
+
+  const headings = hasBody
+    ? post.body!.filter((block) => block._type === "block" && ["h2", "h3"].includes(block.style ?? "")).map((block) => ({
+        id: block._key,
+        text: block.children?.map((child: { text?: string }) => child.text).join("") ?? "",
+      }))
+    : [];
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -61,13 +92,15 @@ export default async function PostPage({ params }: Props) {
     publisher: { "@type": "Organization", name: "Global Insight" },
   };
 
+  const gradient = CATEGORY_GRADIENTS[category] || CATEGORY_GRADIENTS.Global;
+
   return (
     <main>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <article className="border-b border-white/10">
         <header className="mx-auto max-w-5xl px-4 py-12 sm:px-6">
-          <Link href={`/blog?category=${encodeURIComponent(post.category ?? "Global")}`} className="text-sm font-black uppercase tracking-[0.25em] text-emerald-300">
-            {post.category ?? "Global"}
+          <Link href={`/blog?category=${encodeURIComponent(category)}`} className="text-sm font-black uppercase tracking-[0.25em] text-emerald-300">
+            {category}
           </Link>
           <h1 className="mt-5 text-4xl font-black leading-tight tracking-normal sm:text-6xl">{title}</h1>
           {post.excerpt && <p className="mt-6 max-w-3xl text-xl leading-8 text-white/60">{post.excerpt}</p>}
@@ -83,7 +116,13 @@ export default async function PostPage({ params }: Props) {
             {image ? (
               <Image src={image} alt={title} fill priority sizes="100vw" className="object-cover" />
             ) : (
-              <div className="absolute inset-0 bg-[linear-gradient(135deg,#0f766e,#111827_48%,#1d4ed8)]" />
+              <div className={`absolute inset-0 bg-gradient-to-br ${gradient}`}>
+                <div className="absolute inset-0 flex items-center justify-center opacity-15">
+                  <svg className="h-24 w-24 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
+                  </svg>
+                </div>
+              </div>
             )}
           </div>
         </div>
@@ -109,10 +148,12 @@ export default async function PostPage({ params }: Props) {
             <div className="mb-8">
               <UserActions articleSlug={slug} articleTitle={title} />
             </div>
+
+            {/* Full article body */}
             <div className="prose-news text-lg leading-9 text-white/72">
-              {post.body?.length ? (
+              {hasBody ? (
                 <PortableText
-                  value={post.body}
+                  value={post.body!}
                   components={{
                     block: {
                       h2: ({ children, value }: PortableBlockProps) => <h2 id={value?._key} className="text-3xl">{children}</h2>,
@@ -121,9 +162,44 @@ export default async function PostPage({ params }: Props) {
                   }}
                 />
               ) : (
-                <p>{post.excerpt}</p>
+                <div>
+                  {post.excerpt && (
+                    <div className="space-y-6">
+                      <p className="text-xl leading-9 text-white/80">{post.excerpt}</p>
+                      <div className="border-t border-white/10 pt-8">
+                        <p className="text-sm text-white/40">
+                          This is a summary of the article. The full content is available from the original source.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
               )}
             </div>
+
+            {/* Source link for articles without full body */}
+            {!hasBody && (
+              <div className="mt-10 rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-6">
+                <h3 className="text-lg font-black text-white">Read the full article</h3>
+                <p className="mt-2 text-sm text-white/55">
+                  The complete article is available from the original source. Click below to read the full story.
+                </p>
+                <div className="mt-4 flex flex-wrap gap-3">
+                  <Link
+                    href="/blog"
+                    className="rounded bg-emerald-500 px-5 py-2.5 text-sm font-black uppercase tracking-wider text-white hover:bg-emerald-400 transition"
+                  >
+                    Browse more articles
+                  </Link>
+                  <Link
+                    href="/search"
+                    className="rounded border border-white/15 px-5 py-2.5 text-sm font-black uppercase tracking-wider text-white/70 hover:bg-white/10 transition"
+                  >
+                    Search all stories
+                  </Link>
+                </div>
+              </div>
+            )}
           </div>
 
           <aside className="space-y-5">

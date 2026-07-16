@@ -234,6 +234,23 @@ function extractMedia(itemXml: string): {
     }
   }
 
+  if (!image) {
+    const imgTag = itemXml.match(/<img[^>]*src=["']([^"']+)["']/i);
+    if (imgTag && /\.(jpg|jpeg|png|webp|gif)/i.test(imgTag[1])) {
+      image = imgTag[1];
+    }
+  }
+
+  if (!image) {
+    const srcsetMatch = itemXml.match(/srcset=["']([^"']+)/i);
+    if (srcsetMatch) {
+      const firstUrl = srcsetMatch[1].split(",")[0]?.trim().split(/\s+/)[0];
+      if (firstUrl && firstUrl.startsWith("http") && /\.(jpg|jpeg|png|webp|gif)/i.test(firstUrl)) {
+        image = firstUrl;
+      }
+    }
+  }
+
   return { image, video };
 }
 

@@ -49,6 +49,7 @@ export type Story = {
   media: StoryMedia[];
 };
 
+// ── Strict stop words — only remove truly generic words ──
 const STOP_WORDS = new Set([
   "the", "a", "an", "and", "or", "but", "in", "on", "at", "to", "for",
   "of", "with", "by", "as", "is", "are", "was", "were", "be", "been",
@@ -56,11 +57,12 @@ const STOP_WORDS = new Set([
   "has", "have", "had", "do", "does", "did", "that", "this", "these",
   "those", "it", "its", "from", "than", "not", "no", "nor", "so",
   "if", "then", "else", "about", "into", "through", "during", "before",
-  "after", "above", "below", "between", "under", "over", "new", "says",
-  "said", "also", "more", "some", "than", "very", "just", "like",
-  "been", "being", "their", "them", "they", "you", "your", "all",
-  "each", "every", "both", "few", "most", "other", "what", "which",
-  "who", "whom", "when", "where", "how", "any", "only", "own", "same",
+  "after", "above", "below", "between", "under", "over", "says", "said",
+  "also", "more", "some", "very", "just", "like", "been", "being",
+  "their", "them", "they", "you", "your", "all", "each", "every",
+  "both", "few", "most", "other", "what", "which", "who", "whom",
+  "when", "where", "how", "any", "only", "own", "same", "new",
+  "his", "her", "she", "him", "our", "out", "up", "down",
 ]);
 
 function extractKeywords(text: string): string[] {
@@ -71,6 +73,10 @@ function extractKeywords(text: string): string[] {
     .filter((w) => w.length > 2 && !STOP_WORDS.has(w));
 }
 
+function extractTitleKeywords(title: string): string[] {
+  return extractKeywords(title);
+}
+
 function bigrams(text: string): string[] {
   const words = extractKeywords(text);
   const result: string[] = [];
@@ -78,6 +84,20 @@ function bigrams(text: string): string[] {
     result.push(`${words[i]} ${words[i + 1]}`);
   }
   return result;
+}
+
+// ── Entity-like extraction: capitalized words that appear in titles ──
+// Since RSS titles often have proper nouns capitalized, we extract them
+function extractEntities(text: string): string[] {
+  const words = text.split(/\s+/);
+  const entities: string[] = [];
+  for (const word of words) {
+    const clean = word.replace(/[^a-zA-Z]/g, "");
+    if (clean.length > 2 && clean[0] === clean[0].toUpperCase() && clean[0] !== clean[0].toLowerCase()) {
+      entities.push(clean.toLowerCase());
+    }
+  }
+  return [...new Set(entities)];
 }
 
 function cosineSimilarity(a: string[], b: string[]): number {
@@ -98,50 +118,176 @@ function cosineSimilarity(a: string[], b: string[]): number {
   return dot / (Math.sqrt(magA) * Math.sqrt(magB) || 1);
 }
 
-function tagOverlap(a: string[], b: string[]): number {
-  const setA = new Set(a.map((t) => t.toLowerCase()));
-  const setB = new Set(b.map((t) => t.toLowerCase()));
-  const intersection = new Set([...setA].filter((x) => setB.has(x)));
+// ── Title overlap: the strongest signal for same-event ──
+function titleSimilarity(a: string, b: string): number {
+  const kwA = extractTitleKeywords(a);
+  const kwB = extractTitleKeywords(b);
+  if (!kwA.length || !kwB.length) return 0;
+  const setA = new Set(kwA);
+  const setB = new Set(kwB);
+  const intersection = [...setA].filter((x) => setB.has(x));
   const union = new Set([...setA, ...setB]);
-  return intersection.size / (union.size || 1);
+  return intersection.length / (union.size || 1);
 }
 
+// ── Entity overlap ──
+function entityOverlap(a: string, b: string): number {
+  const entA = extractEntities(a);
+  const entB = extractEntities(b);
+  if (!entA.length || !entB.length) return 0;
+  const setA = new Set(entA);
+  const setB = new Set(entB);
+  const intersection = [...setA].filter((x) => setB.has(x));
+  const union = new Set([...setA, ...setB]);
+  return intersection.length / (union.size || 1);
+}
+
+// ── Time proximity in hours ──
+function timeDistanceHours(a: string, b: string): number {
+  const tA = new Date(a).getTime();
+  const tB = new Date(b).getTime();
+  return Math.abs(tA - tB) / (1000 * 60 * 60);
+}
+
+// ── Content description similarity (body-level) ──
+function descriptionSimilarity(a: string, b: string): number {
+  const kwA = extractKeywords(a).slice(0, 15);
+  const kwB = extractKeywords(b).slice(0, 15);
+  return cosineSimilarity(kwA, kwB);
+}
+
+interface ClusterSignals {
+  titleScore: number;
+  entityScore: number;
+  descriptionScore: number;
+  timeDistance: number;
+}
+
+// ── STRICT multi-signal clustering ──
+// Two articles merge ONLY when multiple signals agree strongly.
+// False merges are worse than separate stories.
 function clusterSourceArticles(articles: SourceArticle[]): SourceArticle[][] {
   const clusters: SourceArticle[][] = [];
+  const clusterSignatures: {
+    titles: string[];
+    entities: string[];
+    keywords: string[];
+    descriptions: string[];
+    timeRange: { earliest: number; latest: number };
+  }[] = [];
 
   for (const article of articles) {
-    const articleKw = [
-      ...extractKeywords(article.title),
-      ...bigrams(article.title),
-      ...extractKeywords(article.description).slice(0, 10),
-    ];
-
     let bestCluster = -1;
     let bestScore = 0;
+    let bestSignals: ClusterSignals | null = null;
+
+    const articleEntities = extractEntities(`${article.title} ${article.description}`);
+    const articleTitleKws = extractTitleKeywords(article.title);
+    const articleDescKws = extractKeywords(article.description).slice(0, 15);
 
     for (let i = 0; i < clusters.length; i++) {
-      const clusterKw = [
-        ...extractKeywords(clusters[i][0].title),
-        ...bigrams(clusters[i][0].title),
-        ...extractKeywords(clusters[i][0].description).slice(0, 10),
-      ];
+      const sig = clusterSignatures[i];
 
-      const kwSim = cosineSimilarity(articleKw, clusterKw);
-      const tagSim = tagOverlap(article.tags, clusters[i][0].tags);
+      // ── TIME GATE: Articles more than 72 hours apart cannot merge ──
+      const articleTime = new Date(article.publishedAt).getTime();
+      if (Math.abs(articleTime - sig.timeRange.latest) / (1000 * 60 * 60) > 72) continue;
+      if (Math.abs(articleTime - sig.timeRange.earliest) / (1000 * 60 * 60) > 72) continue;
 
-      const score = kwSim * 0.6 + tagSim * 0.4;
+      // ── Signal 1: Title similarity (strongest) ──
+      let maxTitleSim = 0;
+      for (const existingTitle of sig.titles) {
+        const sim = titleSimilarity(article.title, existingTitle);
+        if (sim > maxTitleSim) maxTitleSim = sim;
+      }
 
-      if (score > bestScore) {
+      // ── Signal 2: Entity overlap (proper nouns, names) ──
+      const clusterEntitySet = new Set(sig.entities);
+      const sharedEntities = articleEntities.filter((e) => clusterEntitySet.has(e));
+      const entityScore = sharedEntities.length /
+        (new Set([...articleEntities, ...sig.entities]).size || 1);
+
+      // ── Signal 3: Description/keyword similarity (weaker) ──
+      let maxDescSim = 0;
+      for (const existingDesc of sig.descriptions) {
+        const sim = descriptionSimilarity(article.description, existingDesc);
+        if (sim > maxDescSim) maxDescSim = sim;
+      }
+
+      // ── Signal 4: Shared specific event words in titles ──
+      // If both titles share a highly specific word (not generic), that's strong evidence
+      const titleKwA = new Set(extractTitleKeywords(article.title));
+      const sharedTitleKws: string[] = [];
+      for (const t of sig.titles) {
+        for (const kw of extractTitleKeywords(t)) {
+          if (titleKwA.has(kw)) sharedTitleKws.push(kw);
+        }
+      }
+      const uniqueSharedTitleKws = [...new Set(sharedTitleKws)];
+      // Filter out very generic words that appear everywhere
+      const specificShared = uniqueSharedTitleKws.filter(
+        (w) => !STOP_WORDS.has(w) && w.length > 3
+      );
+
+      const signals: ClusterSignals = {
+        titleScore: maxTitleSim,
+        entityScore,
+        descriptionScore: maxDescSim,
+        timeDistance: timeDistanceHours(article.publishedAt, sig.timeRange.latest.toString()),
+      };
+
+      // ── COMBINED CONFIDENCE ──
+      let score = 0;
+
+      if (signals.titleScore > 0.25) {
+        // Strong title match: give high weight to title + entity
+        score = signals.titleScore * 0.5 + signals.entityScore * 0.3 + signals.descriptionScore * 0.2;
+        if (signals.timeDistance > 48) score *= 0.3;
+      } else if (specificShared.length >= 2) {
+        // Two or more shared specific words in titles — strong event signal
+        // Even with moderate other scores, this is strong evidence
+        score = signals.entityScore * 0.3 + signals.descriptionScore * 0.3 + signals.titleScore * 0.2 + (specificShared.length * 0.05);
+        if (signals.timeDistance > 48) score *= 0.4;
+      } else if (signals.entityScore > 0.15 && signals.descriptionScore > 0.15) {
+        // Moderate entity + description match
+        score = signals.entityScore * 0.4 + signals.descriptionScore * 0.35 + signals.titleScore * 0.25;
+        if (signals.timeDistance > 24) score *= 0.4;
+      } else {
+        // Weak match: require very strong overlap across the board
+        score = signals.titleScore * 0.3 + signals.entityScore * 0.3 + signals.descriptionScore * 0.4;
+        if (signals.timeDistance > 12) score *= 0.2;
+      }
+
+      // ── STRICT THRESHOLD: 0.25 minimum to merge ──
+      // High enough to prevent false merges, low enough for genuine same-event updates
+      const THRESHOLD = 0.25;
+
+      if (score > THRESHOLD && score > bestScore) {
         bestScore = score;
         bestCluster = i;
+        bestSignals = signals;
       }
     }
 
-    const THRESHOLD = 0.08;
-    if (bestCluster >= 0 && bestScore > THRESHOLD) {
+    if (bestCluster >= 0 && bestSignals) {
       clusters[bestCluster].push(article);
+      const sig = clusterSignatures[bestCluster];
+      sig.titles.push(article.title);
+      sig.entities.push(...articleEntities);
+      sig.keywords.push(...extractKeywords(`${article.title} ${article.description}`));
+      sig.descriptions.push(article.description);
+      const articleTime = new Date(article.publishedAt).getTime();
+      sig.timeRange.earliest = Math.min(sig.timeRange.earliest, articleTime);
+      sig.timeRange.latest = Math.max(sig.timeRange.latest, articleTime);
     } else {
+      const articleTime = new Date(article.publishedAt).getTime();
       clusters.push([article]);
+      clusterSignatures.push({
+        titles: [article.title],
+        entities: articleEntities,
+        keywords: extractKeywords(`${article.title} ${article.description}`),
+        descriptions: [article.description],
+        timeRange: { earliest: articleTime, latest: articleTime },
+      });
     }
   }
 
@@ -227,22 +373,7 @@ function mostCommon(arr: string[]): string {
 function generateHeadline(cluster: SourceArticle[]): string {
   if (cluster.length === 1) return cluster[0].title;
 
-  const allWords = cluster
-    .map((a) => extractKeywords(a.title))
-    .flat();
-  const freq = new Map<string, number>();
-  for (const w of allWords) freq.set(w, (freq.get(w) || 0) + 1);
-
-  const sharedTerms = [...freq.entries()]
-    .filter(([, count]) => count >= Math.ceil(cluster.length * 0.3))
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 4)
-    .map(([word]) => word);
-
-  if (sharedTerms.length >= 2) {
-    return sharedTerms.map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
-  }
-
+  // Use the most descriptive title (longest with most unique content)
   const bestTitle = cluster.reduce((best, a) =>
     a.title.length > best.title.length ? a : best
   );
@@ -305,13 +436,13 @@ function generateKeyFacts(cluster: SourceArticle[]): { fact: string; sources: st
     if (desc.length < 20 || usedDescriptions.has(desc.slice(0, 50))) continue;
     usedDescriptions.add(desc.slice(0, 50));
 
+    // Only attribute sources that are genuinely about the same specific topic
+    const articleKw = extractKeywords(article.title);
     const sources = cluster
       .filter((a) => {
-        const sim = cosineSimilarity(
-          extractKeywords(a.description),
-          extractKeywords(desc)
-        );
-        return sim > 0.3;
+        const aKw = extractKeywords(a.title);
+        const sim = cosineSimilarity(articleKw, aKw);
+        return sim > 0.35;
       })
       .map((a) => a.sourceName);
 
@@ -326,35 +457,32 @@ function generateKeyFacts(cluster: SourceArticle[]): { fact: string; sources: st
 }
 
 function generateWhyItMatters(cluster: SourceArticle[], category: string): string {
-  const tags = [...new Set(cluster.flatMap((a) => a.tags))];
   const uniqueSources = [...new Set(cluster.map((a) => a.sourceName))];
 
-  const significanceMap: Record<string, string> = {
-    AI: "The rapid development of artificial intelligence continues to reshape industries, raise regulatory questions, and spark debate about its societal impact.",
-    Technology: "Technology sector developments have wide-reaching implications for consumers, businesses, and global competitiveness.",
-    Economy: "Economic developments affect policy decisions, market behavior, and the financial outlook for individuals and institutions.",
-    Politics: "Political developments influence governance, international relations, and policy direction across multiple sectors.",
-    Climate: "Climate-related developments have long-term implications for environmental policy, industry practices, and global sustainability goals.",
-    Health: "Health-related developments impact public health policy, healthcare systems, and individual well-being.",
-    Conflict: "Geopolitical conflicts have far-reaching implications for regional stability, international relations, and humanitarian conditions.",
-    Space: "Space developments represent milestones in scientific achievement and have implications for technology, defense, and commercial interests.",
-    Business: "Business developments affect market dynamics, employment, and economic outlook across sectors.",
-    General: "This developing story has implications across multiple sectors and regions.",
-  };
+  // Use a more specific significance based on actual content keywords
+  const allKeywords = cluster.flatMap((a) => extractKeywords(a.title));
+  const keywordFreq = new Map<string, number>();
+  for (const kw of allKeywords) {
+    keywordFreq.set(kw, (keywordFreq.get(kw) || 0) + 1);
+  }
+  const topKeywords = [...keywordFreq.entries()]
+    .filter(([, count]) => count >= Math.ceil(cluster.length * 0.3))
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 3)
+    .map(([kw]) => kw);
 
-  const primaryTag = tags[0] || category;
-  const base = significanceMap[primaryTag] || significanceMap["General"];
+  const topicPhrase = topKeywords.length > 0 ? `related to ${topKeywords.join(", ")}` : `in the ${category.toLowerCase()} sector`;
 
   const multiSourceNote = uniqueSources.length > 1
     ? ` The fact that ${uniqueSources.length} independent sources are covering this development underscores its significance.`
     : "";
 
-  return `${base}${multiSourceNote}`;
+  return `This development ${topicPhrase} has drawn attention from multiple sources.${multiSourceNote}`;
 }
 
 function generateOutlook(cluster: SourceArticle[], category: string): string {
   const uniqueSources = [...new Set(cluster.map((a) => a.sourceName))];
-  return `As this story develops across ${uniqueSources.length} source${uniqueSources.length > 1 ? "s" : ""}, further updates are expected. The ${category.toLowerCase()} sector will continue to be monitored for additional developments and reactions.`;
+  return `As this story develops across ${uniqueSources.length} source${uniqueSources.length > 1 ? "s" : ""}, further updates are expected.`;
 }
 
 function generateAgreements(cluster: SourceArticle[]): string[] {

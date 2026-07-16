@@ -270,10 +270,11 @@ function extractTags(title: string, description: string): string[] {
       "openai",
       "machine learning",
       "deep learning",
-      "neural",
+      "neural network",
+      "large language model",
+      "generative ai",
     ],
     Technology: [
-      "tech",
       "software",
       "hardware",
       "startup",
@@ -283,6 +284,10 @@ function extractTags(title: string, description: string): string[] {
       "google",
       "microsoft",
       "amazon",
+      "meta ",
+      "tiktok",
+      "social media",
+      "data breach",
     ],
     Economy: [
       "economy",
@@ -294,6 +299,8 @@ function extractTags(title: string, description: string): string[] {
       "stock",
       "financial",
       "banking",
+      "recession",
+      "interest rate",
     ],
     Politics: [
       "election",
@@ -302,9 +309,9 @@ function extractTags(title: string, description: string): string[] {
       "minister",
       "parliament",
       "congress",
-      "policy",
-      "government",
       "political",
+      "diplomacy",
+      "sanctions",
     ],
     Climate: [
       "climate",
@@ -314,36 +321,45 @@ function extractTags(title: string, description: string): string[] {
       "renewable",
       "sustainability",
       "green energy",
+      "global warming",
     ],
     Health: [
-      "health",
       "medical",
       "vaccine",
       "disease",
       "hospital",
-      "who",
       "pandemic",
       "virus",
+      "outbreak",
+      "drug",
     ],
     Conflict: [
       "war",
       "conflict",
       "military",
       "troops",
-      "strike",
-      "attack",
-      "ukraine",
-      "gaza",
       "nato",
+      "ceasefire",
+      "invasion",
     ],
     Space: [
-      "space",
       "nasa",
       "spacex",
       "rocket",
       "satellite",
       "mars",
       "orbit",
+      "spacecraft",
+    ],
+    Business: [
+      "earnings",
+      "revenue",
+      "acquisition",
+      "merger",
+      "ipo",
+      "profit",
+      "quarterly",
+      "shareholder",
     ],
   };
 
@@ -366,12 +382,28 @@ export const getAllSourceArticles = cache(
       )
       .flatMap((r) => r.value);
 
-    const seen = new Set<string>();
+    // Deduplicate: same title from multiple sources = keep only first
+    const seenTitles = new Set<string>();
+    const seenUrls = new Set<string>();
     return articles.filter((a) => {
-      const key = a.title.toLowerCase().slice(0, 60);
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return a.title.length > 10;
+      // Skip very short titles
+      if (a.title.length < 10) return false;
+
+      // Exact URL dedup
+      if (seenUrls.has(a.sourceUrl)) return false;
+      seenUrls.add(a.sourceUrl);
+
+      // Normalize title for dedup: lowercase, remove punctuation, take first 8 words
+      const normalizedTitle = a.title
+        .toLowerCase()
+        .replace(/[^a-z0-9\s]/g, "")
+        .split(/\s+/)
+        .slice(0, 8)
+        .join(" ");
+
+      if (seenTitles.has(normalizedTitle)) return false;
+      seenTitles.add(normalizedTitle);
+      return true;
     });
   }
 );

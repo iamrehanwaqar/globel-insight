@@ -5,6 +5,8 @@ import { SiteFooter } from "@/components/layout/site-footer";
 import { SiteHeader } from "@/components/layout/site-header";
 import { CookieConsent } from "@/components/ui/cookie-consent";
 import { AuthProvider } from "@/components/user/auth-provider";
+import { PreferencesProvider } from "@/components/user/user-preferences-provider";
+import { getServerPreferences } from "@/lib/preferences";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -41,11 +43,13 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const initialPreferences = await getServerPreferences();
+
   return (
     <html
       lang="en"
@@ -53,10 +57,12 @@ export default function RootLayout({
     >
       <body className="min-h-full bg-background text-foreground">
         <AuthProvider>
-          <SiteHeader />
-          {children}
-          <SiteFooter />
-          <CookieConsent />
+          <PreferencesProvider initialPreferences={initialPreferences}>
+            <SiteHeader />
+            {children}
+            <SiteFooter />
+            <CookieConsent />
+          </PreferencesProvider>
         </AuthProvider>
         <Analytics />
       </body>

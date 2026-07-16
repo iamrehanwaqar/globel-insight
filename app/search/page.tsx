@@ -1,5 +1,6 @@
 import { searchStories } from "@/lib/stories";
 import Link from "next/link";
+import { FollowButton } from "@/components/user/follow-button";
 
 export const dynamic = 'force-dynamic';
 
@@ -16,9 +17,15 @@ export default async function SearchPage(props: { searchParams: Promise<{ q?: st
 
   return (
     <main className="min-h-screen px-4 py-12 sm:px-6 mx-auto max-w-5xl">
-      <h1 className="text-4xl font-black text-white mb-8">Search Intelligence</h1>
+      <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
+        <h1 className="text-4xl font-black text-white">
+          {categoryFilter ? `Intelligence: ${categoryFilter}` : "Search Intelligence"}
+        </h1>
+        {categoryFilter && <FollowButton topic={categoryFilter} />}
+      </div>
       
       <form method="GET" action="/search" className="mb-12 flex gap-4">
+        {categoryFilter && <input type="hidden" name="category" value={categoryFilter} />}
         <input 
           type="text" 
           name="q" 
@@ -57,7 +64,7 @@ export default async function SearchPage(props: { searchParams: Promise<{ q?: st
               </p>
               <div className="mt-4 flex items-center gap-2 text-xs text-white/40">
                 <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9.5a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 002-2V9.5a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
                 </svg>
                 Compiled from {story.sourceCount} sources
               </div>

@@ -168,3 +168,28 @@ export const searchStories = cache(async (query: string): Promise<Story[]> => {
     s.sources.some(src => src.tags?.some(tag => tag.toLowerCase().includes(lowerQuery)))
   );
 });
+
+export const getPersonalizedBriefing = cache(async (followedTopics: string[]): Promise<Story[]> => {
+  const stories = await getStories();
+  
+  if (!followedTopics || followedTopics.length === 0) {
+    // If no personalization, return the top stories as usual
+    return stories.slice(0, 5);
+  }
+
+  // Find stories that match followed topics (case insensitive)
+  const lowerFollowed = followedTopics.map(t => t.toLowerCase());
+  const personalizedStories = stories.filter(s => lowerFollowed.includes(s.category.toLowerCase()));
+  
+  // Find top global stories not in personalized
+  const topGlobal = stories.filter(s => !personalizedStories.includes(s)).slice(0, 2);
+  
+  // Combine: 3 personalized, 2 global
+  const briefing = [
+    ...personalizedStories.slice(0, 3),
+    ...topGlobal
+  ];
+  
+  // Sort by date to maintain relevance
+  return briefing.sort((a, b) => new Date(b.lastUpdated).getTime() - new Date(a.lastUpdated).getTime());
+});

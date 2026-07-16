@@ -4,15 +4,24 @@ import { ArticleCard } from "@/components/news/article-card";
 import { AdSlot } from "@/components/news/ad-slot";
 import { LocalPublishedArticles } from "@/components/news/local-published-articles";
 import { getArticles, getCategories } from "@/lib/news";
-import { getStories } from "@/lib/stories";
+import { getStories, getPersonalizedBriefing } from "@/lib/stories";
 import { BreakingNewsTicker } from "@/components/story/breaking-news-ticker";
+import { getServerPreferences } from "@/lib/preferences";
 
 export default async function Home() {
   const articles = await getArticles();
   const stories = await getStories();
+  const prefs = await getServerPreferences();
   
   const featuredStory = stories[0];
-  const latestStories = stories.slice(1, 4); // Top 3 other stories
+  const hasPersonalization = prefs.followedTopics.length > 0;
+  
+  // Get personalized or just latest stories
+  const briefingStories = await getPersonalizedBriefing(prefs.followedTopics);
+  
+  // Remove featured from list to prevent duplication
+  const latestStories = briefingStories.filter(s => s.id !== featuredStory?.id).slice(0, 3);
+  
   const latestArticles = articles.filter(a => !a.featured).slice(0, 3);
   const categories = getCategories(articles).slice(0, 6);
 
@@ -35,8 +44,11 @@ export default async function Home() {
                 <Link href="/search" className="rounded bg-emerald-500 px-6 py-3 text-sm font-black uppercase tracking-[0.16em] text-white transition hover:bg-emerald-400">
                   Search Stories
                 </Link>
-                <Link href="/about" className="rounded border border-white/15 px-6 py-3 text-sm font-black uppercase tracking-[0.16em] text-white/80 transition hover:bg-white/10">
-                  Our Methodology
+                <Link href="/following" className="rounded border border-white/15 px-6 py-3 text-sm font-black uppercase tracking-[0.16em] text-white/80 transition hover:bg-white/10 flex items-center gap-2">
+                  <svg className="h-4 w-4 text-emerald-400" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M5 4a2 2 0 012-2h6a2 2 0 012 2v14l-5-2.5L5 18V4z" />
+                  </svg>
+                  Your Interests
                 </Link>
               </div>
             </div>
@@ -62,23 +74,49 @@ export default async function Home() {
       <section className="mx-auto grid max-w-7xl gap-8 px-4 py-12 sm:px-6 lg:grid-cols-[1fr_320px]">
         <div>
           <div className="mb-10">
-            <h2 className="mb-6 text-3xl font-black">Developing Stories</h2>
+            <h2 className="mb-6 text-3xl font-black flex items-center gap-3">
+              {hasPersonalization ? (
+                <>
+                  <svg className="h-8 w-8 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                  </svg>
+                  Your Global Briefing
+                </>
+              ) : (
+                "Developing Stories"
+              )}
+            </h2>
             <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-              {latestStories.map(story => (
-                <Link href={`/story/${story.slug}`} key={story.id} className="group flex flex-col justify-between rounded border border-white/10 bg-white/[0.045] p-5 transition hover:bg-white/10 hover:border-emerald-500/50">
-                  <div>
-                    <div className="mb-3 text-xs font-bold uppercase tracking-widest text-emerald-400">{story.category}</div>
-                    <h3 className="mb-3 text-xl font-bold group-hover:text-emerald-300 transition-colors">{story.headline}</h3>
-                    <p className="text-sm text-white/60 line-clamp-2">{story.whatHappened}</p>
-                  </div>
-                  <div className="mt-4 flex items-center gap-2 border-t border-white/10 pt-4 text-xs text-white/40">
-                    <span>{story.sourceCount} Sources</span>
-                    <span>•</span>
-                    <span>Updated {new Date(story.lastUpdated).toLocaleDateString()}</span>
-                  </div>
-                </Link>
-              ))}
+              {latestStories.map(story => {
+                const isPersonalized = prefs.followedTopics.some(t => t.toLowerCase() === story.category.toLowerCase());
+                
+                return (
+                  <Link href={`/story/${story.slug}`} key={story.id} className="group flex flex-col justify-between rounded border border-white/10 bg-white/[0.045] p-5 transition hover:bg-white/10 hover:border-emerald-500/50 relative">
+                    {hasPersonalization && isPersonalized && (
+                      <div className="absolute top-0 right-0 rounded-bl-lg rounded-tr bg-emerald-500/20 px-2 py-1 text-[10px] font-bold uppercase tracking-widest text-emerald-400 border-b border-l border-emerald-500/30">
+                        Based on your interests
+                      </div>
+                    )}
+                    <div>
+                      <div className="mb-3 text-xs font-bold uppercase tracking-widest text-emerald-400 mt-2">{story.category}</div>
+                      <h3 className="mb-3 text-xl font-bold group-hover:text-emerald-300 transition-colors">{story.headline}</h3>
+                      <p className="text-sm text-white/60 line-clamp-2">{story.whatHappened}</p>
+                    </div>
+                    <div className="mt-4 flex items-center gap-2 border-t border-white/10 pt-4 text-xs text-white/40">
+                      <span>{story.sourceCount} Sources</span>
+                      <span>•</span>
+                      <span>Updated {new Date(story.lastUpdated).toLocaleDateString()}</span>
+                    </div>
+                  </Link>
+                );
+              })}
             </div>
+            {latestStories.length === 0 && (
+              <div className="py-12 text-center border border-white/10 rounded bg-white/5">
+                <p className="text-white/50 mb-4">You haven't followed any topics yet, or there are no new stories.</p>
+                <Link href="/following" className="text-emerald-400 hover:underline">Explore topics to follow</Link>
+              </div>
+            )}
           </div>
 
           <div className="mb-6 flex items-end justify-between gap-4 border-t border-white/10 pt-10">
@@ -97,17 +135,22 @@ export default async function Home() {
         <aside className="space-y-5">
           <AdSlot />
           <TrendingDashboard articles={articles} />
+          
           <div className="rounded border border-white/10 bg-white/[0.045] p-5">
-            <h3 className="text-sm font-black uppercase tracking-[0.22em] text-white/45">Categories</h3>
+            <h3 className="text-sm font-black uppercase tracking-[0.22em] text-white/45">Explore Interests</h3>
             <div className="mt-4 grid gap-3">
               {categories.map((category) => (
-                <Link key={category} href={`/search?category=${encodeURIComponent(category)}`} className="flex items-center justify-between rounded border border-white/10 px-4 py-3 text-sm font-bold text-white/75 hover:border-emerald-300/40 hover:text-white">
+                <Link key={category} href={`/search?category=${encodeURIComponent(category)}`} className="flex items-center justify-between rounded border border-white/10 px-4 py-3 text-sm font-bold text-white/75 hover:border-emerald-300/40 hover:text-white group">
                   {category}
-                  <span>→</span>
+                  <span className="text-emerald-400 opacity-0 group-hover:opacity-100 transition-opacity">Follow →</span>
                 </Link>
               ))}
             </div>
+            <div className="mt-4 pt-4 border-t border-white/10">
+              <Link href="/following" className="text-xs text-white/50 hover:text-white uppercase font-bold tracking-widest block text-center">Manage Your Topics</Link>
+            </div>
           </div>
+          
           <div className="rounded border border-emerald-300/20 bg-emerald-300/10 p-5">
             <h3 className="text-2xl font-black">Daily Intelligence</h3>
             <p className="mt-3 text-sm leading-6 text-white/58">A concise morning brief on power, money, technology, and global risk.</p>

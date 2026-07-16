@@ -193,3 +193,33 @@ export const getPersonalizedBriefing = cache(async (followedTopics: string[]): P
   // Sort by date to maintain relevance
   return briefing.sort((a, b) => new Date(b.lastUpdated).getTime() - new Date(a.lastUpdated).getTime());
 });
+
+export const getEntityData = cache(async (type: string, slug: string): Promise<{
+  name: string;
+  type: string;
+  overview: string;
+  relatedStories: Story[];
+} | null> => {
+  const stories = await getStories();
+  const decodedSlug = decodeURIComponent(slug).replace(/-/g, ' ');
+  
+  // Find stories related to the entity
+  const relatedStories = stories.filter(s => {
+    const isTopicMatch = type === 'topic' && s.category.toLowerCase() === decodedSlug.toLowerCase();
+    const isTagMatch = s.sources.some(src => src.tags?.some(tag => tag.toLowerCase() === decodedSlug.toLowerCase()));
+    const isHeadlineMatch = s.headline.toLowerCase().includes(decodedSlug.toLowerCase());
+    
+    return isTopicMatch || isTagMatch || isHeadlineMatch;
+  });
+
+  if (relatedStories.length === 0 && type !== 'topic') {
+    return null; // Don't return empty entities unless it's a known topic
+  }
+
+  return {
+    name: decodedSlug.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
+    type,
+    overview: `This entity is currently tracked across ${relatedStories.length} major global events in our intelligence database. Coverage includes ${relatedStories.slice(0,2).map(s => `"${s.headline}"`).join(" and ")}.`,
+    relatedStories
+  };
+});

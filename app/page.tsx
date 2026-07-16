@@ -153,10 +153,18 @@ export default async function Home() {
           
           <div className="rounded border border-emerald-300/20 bg-emerald-300/10 p-5">
             <h3 className="text-2xl font-black">Daily Intelligence</h3>
-            <p className="mt-3 text-sm leading-6 text-white/58">A concise morning brief on power, money, technology, and global risk.</p>
-            <form className="mt-5 grid gap-3">
-              <input type="email" placeholder="Email address" className="rounded border border-white/10 bg-black/30 px-4 py-3 text-sm outline-none focus:border-emerald-300" />
-              <button className="rounded bg-white px-4 py-3 text-sm font-black uppercase tracking-[0.16em] text-black hover:bg-emerald-300">Subscribe</button>
+            <p className="mt-3 text-sm leading-6 text-white/58">A concise morning brief on power, money, technology, and global risk, tailored to your interests.</p>
+            <div className="mt-5 mb-4">
+              <Link href="/daily" className="block w-full text-center rounded bg-emerald-500 px-4 py-3 text-sm font-black uppercase tracking-[0.16em] text-white hover:bg-emerald-400 transition-colors">
+                Read Today's Briefing
+              </Link>
+            </div>
+            <div className="text-xs text-white/40 text-center uppercase font-bold tracking-widest border-t border-white/10 pt-4 mb-3">
+              Or receive via email
+            </div>
+            <form className="grid gap-3">
+              <input type="email" placeholder="Email address" className="rounded border border-white/10 bg-black/30 px-4 py-3 text-sm outline-none focus:border-emerald-300 text-white" />
+              <button className="rounded bg-white px-4 py-3 text-sm font-black uppercase tracking-[0.16em] text-black hover:bg-emerald-300 transition-colors">Subscribe</button>
             </form>
           </div>
         </aside>

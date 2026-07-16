@@ -1,7 +1,6 @@
 import { getStories, getPersonalizedBriefing } from "@/lib/stories";
 import { getServerPreferences } from "@/lib/preferences";
 import Link from "next/link";
-import { StoryTimeline } from "@/components/story/story-timeline";
 
 export const dynamic = 'force-dynamic';
 
@@ -9,14 +8,11 @@ export default async function DailyIntelligencePage() {
   const prefs = await getServerPreferences();
   const allStories = await getStories();
   const personalizedStories = await getPersonalizedBriefing(prefs.followedTopics);
-  
-  // Top 3 Global Developments (excluding those already in personalized if possible, or just the top 3 overall)
+
   const topGlobalStories = allStories.slice(0, 3);
-  
-  // Stories related to interests
-  const interestStories = personalizedStories.filter(s => prefs.followedTopics.some(t => t.toLowerCase() === s.category.toLowerCase()));
-  
-  // Emerging / Stories to watch
+  const interestStories = personalizedStories.filter(s =>
+    prefs.followedTopics.some(t => t.toLowerCase() === s.category.toLowerCase())
+  );
   const emergingStories = allStories.slice(3, 6);
 
   return (
@@ -36,7 +32,6 @@ export default async function DailyIntelligencePage() {
         </p>
       </header>
 
-      {/* TOP GLOBAL DEVELOPMENTS */}
       <section className="mb-16">
         <h2 className="text-sm font-black uppercase tracking-[0.2em] text-emerald-400 mb-6 border-l-4 border-emerald-400 pl-4">
           Top Global Developments
@@ -60,10 +55,11 @@ export default async function DailyIntelligencePage() {
                 <h4 className="text-xs font-bold uppercase text-white/40 mb-4">Sources ({story.sourceCount})</h4>
                 <ul className="space-y-3">
                   {story.sources.slice(0, 3).map(src => (
-                    <li key={src._id} className="text-sm text-white/60 line-clamp-2">
-                      <a href={`/blog/${src.slug?.current || src._id}`} className="hover:text-emerald-400 transition-colors">
+                    <li key={src.id} className="text-sm text-white/60 line-clamp-2">
+                      <a href={src.sourceUrl} target="_blank" rel="noopener noreferrer" className="hover:text-emerald-400 transition-colors">
                         {src.title}
                       </a>
+                      <div className="text-[10px] text-white/30 mt-0.5">{src.sourceName}</div>
                     </li>
                   ))}
                 </ul>
@@ -73,7 +69,6 @@ export default async function DailyIntelligencePage() {
         </div>
       </section>
 
-      {/* YOUR INTERESTS */}
       {prefs.followedTopics.length > 0 && interestStories.length > 0 && (
         <section className="mb-16">
           <h2 className="text-sm font-black uppercase tracking-[0.2em] text-emerald-400 mb-6 border-l-4 border-emerald-400 pl-4 flex items-center justify-between">
@@ -92,7 +87,6 @@ export default async function DailyIntelligencePage() {
         </section>
       )}
 
-      {/* STORIES TO WATCH */}
       <section className="mb-16">
         <h2 className="text-sm font-black uppercase tracking-[0.2em] text-white/50 mb-6 border-l-4 border-white/20 pl-4">
           Stories To Watch
@@ -108,7 +102,6 @@ export default async function DailyIntelligencePage() {
           ))}
         </div>
       </section>
-
     </main>
   );
 }

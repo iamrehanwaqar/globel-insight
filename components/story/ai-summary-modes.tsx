@@ -3,10 +3,17 @@
 import { useState } from "react";
 import type { Story } from "@/lib/stories";
 
-type SummaryMode = "30-second" | "key-points" | "detailed" | "why-it-matters";
+type SummaryMode = "summary" | "key-facts" | "why-it-matters" | "outlook";
 
 export function AiSummaryModes({ story }: { story: Story }) {
-  const [mode, setMode] = useState<SummaryMode>("30-second");
+  const [mode, setMode] = useState<SummaryMode>("summary");
+
+  const tabs = [
+    { id: "summary" as const, label: "What Happened" },
+    { id: "key-facts" as const, label: "Key Facts" },
+    { id: "why-it-matters" as const, label: "Why It Matters" },
+    { id: "outlook" as const, label: "Outlook" },
+  ];
 
   return (
     <div className="rounded border border-emerald-900/30 bg-[#0A0F1A]/80 p-6 shadow-xl backdrop-blur-sm">
@@ -15,17 +22,16 @@ export function AiSummaryModes({ story }: { story: Story }) {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
         </svg>
         <span className="text-xs font-black uppercase tracking-widest">AI Intelligence Briefing</span>
+        <span className="ml-2 rounded bg-emerald-500/20 px-2 py-0.5 text-[10px] font-bold text-emerald-400">
+          Generated from {story.sourceCount} source{story.sourceCount !== 1 ? "s" : ""}
+        </span>
       </div>
-      
+
       <div className="mb-6 flex space-x-2 border-b border-white/10 pb-2 overflow-x-auto no-scrollbar">
-        {[
-          { id: "30-second", label: "30-Second Summary" },
-          { id: "key-points", label: "Key Points" },
-          { id: "why-it-matters", label: "Why It Matters" }
-        ].map((tab) => (
+        {tabs.map((tab) => (
           <button
             key={tab.id}
-            onClick={() => setMode(tab.id as SummaryMode)}
+            onClick={() => setMode(tab.id)}
             className={`whitespace-nowrap px-4 py-2 text-sm font-medium transition-colors ${
               mode === tab.id
                 ? "border-b-2 border-emerald-400 text-emerald-400"
@@ -38,26 +44,47 @@ export function AiSummaryModes({ story }: { story: Story }) {
       </div>
 
       <div className="min-h-[120px] text-white/80">
-        {mode === "30-second" && (
+        {mode === "summary" && (
           <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <p className="text-xs font-bold uppercase tracking-widest text-emerald-400/60 mb-3">What Happened</p>
             <p className="leading-relaxed">{story.whatHappened}</p>
           </div>
         )}
-        
-        {mode === "key-points" && (
-          <ul className="animate-in fade-in slide-in-from-bottom-2 space-y-3 duration-300">
-            {story.keyPoints.map((point, i) => (
-              <li key={i} className="flex gap-3">
-                <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-400" />
-                <span className="leading-relaxed">{point}</span>
-              </li>
-            ))}
-          </ul>
+
+        {mode === "key-facts" && (
+          <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <p className="text-xs font-bold uppercase tracking-widest text-emerald-400/60 mb-3">Key Facts</p>
+            <ul className="space-y-3">
+              {story.keyFacts.map((item, i) => (
+                <li key={i} className="flex gap-3">
+                  <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-400" />
+                  <div>
+                    <span className="leading-relaxed">{item.fact}</span>
+                    <div className="mt-1 flex flex-wrap gap-1.5">
+                      {item.sources.map((src) => (
+                        <span key={src} className="rounded bg-white/5 px-1.5 py-0.5 text-[10px] text-white/30">
+                          {src}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
         )}
 
         {mode === "why-it-matters" && (
           <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <p className="text-xs font-bold uppercase tracking-widest text-emerald-400/60 mb-3">Why It Matters</p>
             <p className="leading-relaxed">{story.whyItMatters}</p>
+          </div>
+        )}
+
+        {mode === "outlook" && (
+          <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <p className="text-xs font-bold uppercase tracking-widest text-emerald-400/60 mb-3">Outlook</p>
+            <p className="leading-relaxed">{story.outlook}</p>
           </div>
         )}
       </div>
